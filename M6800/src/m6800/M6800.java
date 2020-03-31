@@ -15,6 +15,11 @@
 **      -Fix glitch in reset so reset works properly
 **      -Add menus to UI
 **      -Add ability to control clock rate
+** V1.3:
+**      -Expect data in first s-record in case there is no S0 record
+**      -Bug fix to read other S-records that may have gaps in addresses
+**      -Ignore checksum mismatches in s-record being loaded
+**      -Clear RAM when loading a new s-record
 ** 
 */
 
@@ -31,7 +36,7 @@ public class M6800 {
     /**
      * @param args the command line arguments
      */
-    final static String version = "V1.2";
+    final static String version = "V1.3";
     
     final static int BYTESPERSRECORD = 16;
     
@@ -175,16 +180,30 @@ public class M6800 {
             return (result);
         }
         aCPU.Halt(true);
-        iAddress = 0;
+        //for(index=0;index < mem.RAMSIZE;index++)
+        //    mem.MemWrite(index, 0);
         
+        if(srec.Type == 1)
+        {
+            iAddress = srec.address;
+            for(index=0;index < srec.dataBytes;index++)
+            {
+                mem.MemWrite(iAddress++, srec.data[index]);
+            }
+        }
+        else
+            iAddress = 0;
         while(iAddress < mem.RAMSIZE)
         {
             instring = ReadString(in);
+            if(instring.compareTo("") == 0) // may have reached the end
+                break;
             result = srec.ParseFromString(instring); //try starting srecord
             if (result == SRecord.NO_ERROR)
             {
                 if(srec.Type == 1)
                 {
+                    iAddress = srec.address;
                     for(index=0;index < srec.dataBytes;index++)
                     {
                         mem.MemWrite(iAddress++, srec.data[index]);
@@ -192,6 +211,7 @@ public class M6800 {
                 }
                 else if(srec.Type == 9) //reached the end
                 {
+                    index = mem.MemRead(0);
                     break;
                 }
             }
@@ -213,9 +233,12 @@ public class M6800 {
             try {
                 inchar = in.read();
             } catch (Exception exc) {
-                
+                return (instring);
             }
-            instring = instring + (char)inchar;  
+            if(inchar != -1) //EOF reached
+                instring = instring + (char)inchar;
+            else
+                return (instring);
         } while ((inchar != '\n') && (inchar != 0));
         return (instring);
     }
