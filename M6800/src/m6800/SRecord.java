@@ -3,6 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
+/*
+**Revisions:
+** 3/30/2020 Ignore bad checksum in s-record
+*/
 package m6800;
 
 /**
@@ -67,6 +72,7 @@ public class SRecord {
                     }
                     else
                     {
+                        address = 0;
                         state = ParseStates.TYPE;
                         stringPos++;
                     } 
@@ -89,7 +95,7 @@ public class SRecord {
                     iCounter = addressSize;
                     while(iCounter > 0)
                     {
-                        address *= 16;
+                        address *= 256;
                         smallString = inputString.substring(stringPos, stringPos+2);
                         value = HexToInt(smallString);
                         address = address + value;
@@ -117,12 +123,12 @@ public class SRecord {
                     testchecksum = (~testchecksum & 0xFF);
                     smallString = inputString.substring(stringPos, stringPos+2);
                     value = HexToInt(smallString);
-                    if(value != testchecksum)
-                    {
-                        retVal = ERR_INVALID_CHECKSUM;
-                        return (retVal);
-                    }
-                    else
+                    //if(value != testchecksum)
+                    //{
+                    //    retVal = ERR_INVALID_CHECKSUM;
+                    //    return (retVal);
+                    //}
+                    //else
                         checksum = value;
                     state = ParseStates.END;
                 break;       
