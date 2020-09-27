@@ -31,6 +31,7 @@ import javax.swing.UIManager;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.io.*;
+import javax.swing.UnsupportedLookAndFeelException;
 /**
  *
  * @author daves
@@ -53,6 +54,8 @@ public class UI extends JFrame implements ActionListener, Runnable {
     JButton DButton;
     JButton EButton;
     JButton FButton;
+    JButton NMIButton;
+    JButton IRQButton;
     JLabel HLabel;
     JLabel ILabel;
     JLabel NLabel;
@@ -123,6 +126,10 @@ public class UI extends JFrame implements ActionListener, Runnable {
     final static int EBUTTONSTARTY = WINDOWHEIGHT-(6*BUTTONHEIGHT)-BOTTOMPAD;
     final static int FBUTTONSTARTX = XCENTER + (BUTTONWIDTH / 2);
     final static int FBUTTONSTARTY = WINDOWHEIGHT-(6*BUTTONHEIGHT)-BOTTOMPAD;
+    final static int NMIBUTTONSTARTX = 50;
+    final static int NMIBUTTONSTARTY = WINDOWHEIGHT/2;
+    final static int IRQBUTTONSTARTX = 50;
+    final static int IRQBUTTONSTARTY = (WINDOWHEIGHT / 2) - BUTTONHEIGHT;
     
     final static int HDISPLAYSTARTX = XCENTER - (3 * DISPLAYWIDTH + (5 * DISPLAYSPACEX / 2));
     final static int IDISPLAYSTARTX = XCENTER - (2 * DISPLAYWIDTH + (3 * DISPLAYSPACEX / 2));
@@ -151,7 +158,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
     final int iFButtonStartX = 150;
     final int iFButtonStartY = 150;
     
-    final static int RefreshMilliseconds = 10;
+    final static int REFRESHMILLISECONDS = 10;
     
     int debug;
     
@@ -177,34 +184,26 @@ public class UI extends JFrame implements ActionListener, Runnable {
         super ("ET3400A Simulator");
         try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) {
         }
         runner = new Thread(this);
-        setSize(WINDOWWIDTH, WINDOWHEIGHT);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setVisible(true);
-        setResizable(false);
         HDisplay = new sevenSegmentDisplay(HDISPLAYSTARTX, DISPLAYSTARTY);
         IDisplay = new sevenSegmentDisplay(IDISPLAYSTARTX, DISPLAYSTARTY);
         NDisplay = new sevenSegmentDisplay(NDISPLAYSTARTX, DISPLAYSTARTY);
         ZDisplay = new sevenSegmentDisplay(ZDISPLAYSTARTX, DISPLAYSTARTY);
         VDisplay = new sevenSegmentDisplay(VDISPLAYSTARTX, DISPLAYSTARTY);
         CDisplay = new sevenSegmentDisplay(CDISPLAYSTARTX, DISPLAYSTARTY);
-        myPanel pane = new myPanel(HDisplay, IDisplay, NDisplay, ZDisplay, VDisplay, CDisplay);
         ResetButton = new JButton("Reset");
         ResetButton.setBounds(RESETBUTTONSTARTX, RESETBUTTONSTARTY, BUTTONWIDTH, BUTTONHEIGHT);
         ResetButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
         ResetButton.setBackground(Color.black);
         ResetButton.setForeground(Color.white);
-        ResetButton.addActionListener(this);
         ResetButton.setOpaque(true);
         ZeroButton = new JButton("0");
         ZeroButton.setBounds(ZEROBUTTONSTARTX, ZEROBUTTONSTARTY, BUTTONWIDTH, BUTTONHEIGHT);
         ZeroButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
         ZeroButton.setBackground(Color.black);
         ZeroButton.setForeground(Color.white);
-        ZeroButton.addActionListener(this);
         ZeroButton.setOpaque(true);
         OneButton = new JButton("<HTML>ACCA<br>&nbsp;&nbsp;&nbsp;&nbsp;1</HTML>");
         OneButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -212,7 +211,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         OneButton.setHorizontalAlignment(SwingConstants.CENTER);
         OneButton.setBackground(Color.black);
         OneButton.setForeground(Color.white);
-        OneButton.addActionListener(this);
         OneButton.setOpaque(true);
         TwoButton = new JButton("<HTML>ACCB<br>&nbsp;&nbsp;&nbsp;&nbsp;2</HTML>");
         TwoButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -220,7 +218,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         TwoButton.setHorizontalAlignment(SwingConstants.CENTER);
         TwoButton.setBackground(Color.black);
         TwoButton.setForeground(Color.white);
-        TwoButton.addActionListener(this);
         TwoButton.setOpaque(true);
         ThreeButton = new JButton("<HTML>PC<br>&nbsp;&nbsp;3</HTML>");
         ThreeButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -228,7 +225,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         ThreeButton.setHorizontalAlignment(SwingConstants.CENTER);
         ThreeButton.setBackground(Color.black);
         ThreeButton.setForeground(Color.white);
-        ThreeButton.addActionListener(this);
         ThreeButton.setOpaque(true);
         FourButton = new JButton("<HTML>INDEX<br>&nbsp;&nbsp;&nbsp;&nbsp;4</HTML>");
         FourButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -236,7 +232,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         FourButton.setHorizontalAlignment(SwingConstants.CENTER);
         FourButton.setBackground(Color.black);
         FourButton.setForeground(Color.white);
-        FourButton.addActionListener(this);
         FourButton.setOpaque(true);
         FiveButton = new JButton("<HTML>CC<br>&nbsp;&nbsp;5</HTML>");
         FiveButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -244,7 +239,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         FiveButton.setHorizontalAlignment(SwingConstants.CENTER);
         FiveButton.setBackground(Color.black);
         FiveButton.setForeground(Color.white);
-        FiveButton.addActionListener(this);
         FiveButton.setOpaque(true);
         SixButton = new JButton("<HTML>SP<br>&nbsp;&nbsp;6</HTML>");
         SixButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -252,7 +246,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         SixButton.setHorizontalAlignment(SwingConstants.CENTER);
         SixButton.setBackground(Color.black);
         SixButton.setForeground(Color.white);
-        SixButton.addActionListener(this);
         SixButton.setOpaque(true);
         SevenButton = new JButton("<HTML>RTI<br>&nbsp;&nbsp;7</HTML>");
         SevenButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -260,7 +253,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         SevenButton.setHorizontalAlignment(SwingConstants.CENTER);
         SevenButton.setBackground(Color.black);
         SevenButton.setForeground(Color.white);
-        SevenButton.addActionListener(this);
         SevenButton.setOpaque(true);
         EightButton = new JButton("<HTML>SS<br>&nbsp;&nbsp;8</HTML>");
         EightButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -268,7 +260,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         EightButton.setHorizontalAlignment(SwingConstants.CENTER);
         EightButton.setBackground(Color.black);
         EightButton.setForeground(Color.white);
-        EightButton.addActionListener(this);
         EightButton.setOpaque(true);
         NineButton = new JButton("<HTML>BR<br>&nbsp;&nbsp;9</HTML>");
         NineButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -276,7 +267,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         NineButton.setHorizontalAlignment(SwingConstants.CENTER);
         NineButton.setBackground(Color.black);
         NineButton.setForeground(Color.white);
-        NineButton.addActionListener(this);
         NineButton.setOpaque(true);
         AButton = new JButton("<HTML>AUTO<br>&nbsp;&nbsp;&nbsp;&nbsp;A</HTML>");
         AButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -284,7 +274,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         AButton.setHorizontalAlignment(SwingConstants.CENTER);
         AButton.setBackground(Color.black);
         AButton.setForeground(Color.white);
-        AButton.addActionListener(this);
         AButton.setOpaque(true);
         BButton = new JButton("<HTML>BACK<br>&nbsp;&nbsp;&nbsp;&nbsp;B</HTML>");
         BButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -292,7 +281,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         BButton.setHorizontalAlignment(SwingConstants.CENTER);
         BButton.setBackground(Color.black);
         BButton.setForeground(Color.white);
-        BButton.addActionListener(this);
         BButton.setOpaque(true);
         CButton = new JButton("<HTML>CHAN<br>&nbsp;&nbsp;&nbsp;&nbsp;C</HTML>");
         CButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -300,7 +288,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         CButton.setHorizontalAlignment(SwingConstants.CENTER);
         CButton.setBackground(Color.black);
         CButton.setForeground(Color.white);
-        CButton.addActionListener(this);
         CButton.setOpaque(true);
         DButton = new JButton("<HTML>DO<br>&nbsp;&nbsp;D</HTML>");
         DButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -308,7 +295,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         DButton.setHorizontalAlignment(SwingConstants.CENTER);
         DButton.setBackground(Color.black);
         DButton.setForeground(Color.white);
-        DButton.addActionListener(this);
         DButton.setOpaque(true);
         EButton = new JButton("<HTML>EXAM<br>&nbsp;&nbsp;&nbsp;&nbsp;E</HTML>");
         EButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -316,7 +302,6 @@ public class UI extends JFrame implements ActionListener, Runnable {
         EButton.setHorizontalAlignment(SwingConstants.CENTER);
         EButton.setBackground(Color.black);
         EButton.setForeground(Color.white);
-        EButton.addActionListener(this);
         EButton.setOpaque(true);
         FButton = new JButton("<HTML>FWD<br>&nbsp;&nbsp;&nbsp;F</HTML>");
         FButton.setMargin(new Insets(BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN,BUTTONMARGIN));
@@ -324,25 +309,11 @@ public class UI extends JFrame implements ActionListener, Runnable {
         FButton.setHorizontalAlignment(SwingConstants.CENTER);
         FButton.setBackground(Color.black);
         FButton.setForeground(Color.white);
-        FButton.addActionListener(this);
         FButton.setOpaque(true);
-        pane.add(ResetButton);
-        pane.add(ZeroButton);
-        pane.add(OneButton);
-        pane.add(TwoButton);
-        pane.add(ThreeButton);
-        pane.add(FourButton);
-        pane.add(FiveButton);
-        pane.add(SixButton);
-        pane.add(SevenButton);
-        pane.add(EightButton);
-        pane.add(NineButton);
-        pane.add(AButton);
-        pane.add(BButton);
-        pane.add(CButton);
-        pane.add(DButton);
-        pane.add(EButton);
-        pane.add(FButton);
+        NMIButton = new JButton("<HTML>NMI</HTML>");
+        NMIButton.setBounds(NMIBUTTONSTARTX, NMIBUTTONSTARTY, BUTTONWIDTH, BUTTONHEIGHT);
+        IRQButton = new JButton("<HTML>IRQ</HTML>");
+        IRQButton.setBounds(IRQBUTTONSTARTX, IRQBUTTONSTARTY, BUTTONWIDTH, BUTTONHEIGHT);
         HLabel = new JLabel("H");
         HLabel.setForeground(Color.blue);
         HLabel.setBounds(HLABELX, LABELSTARTY, LABELHEIGHT, LABELWIDTH);
@@ -361,40 +332,88 @@ public class UI extends JFrame implements ActionListener, Runnable {
         CLabel = new JLabel("C");
         CLabel.setForeground(Color.blue);
         CLabel.setBounds(CLABELX, LABELSTARTY, LABELHEIGHT, LABELWIDTH);
-        pane.add(HLabel);
-        pane.add(ILabel);
-        pane.add(NLabel);
-        pane.add(ZLabel);
-        pane.add(VLabel);
-        pane.add(CLabel);
         menuFile = new JMenu("File");
         load = new JMenuItem("Load");
-        load.addActionListener(this);
         save = new JMenuItem("Save");
-        save.addActionListener(this);
         settings = new JMenuItem("Settings");
-        settings.addActionListener(this);
         exit = new JMenuItem("Exit");
-        exit.addActionListener(this);
         menuFile.add(load);
         menuFile.add(save);
         menuFile.add(settings);
         menuFile.add(exit);
         menuHelp = new JMenu("Help");
         about = new JMenuItem("About");
-        about.addActionListener(this);
         menuHelp.add(about);
         menubar = new JMenuBar();
         menubar.add(menuFile);
         menubar.add(menuHelp);
         dialog = new JOptionPane();
-        add (pane);
-        setJMenuBar(menubar);
         myCPU = aCPU;
         myMemoryModule = aMemoryModule;
+    }
+    
+    public void FinishUIInit()
+    {
+        myPanel jpane = new myPanel(HDisplay, IDisplay, NDisplay, ZDisplay, VDisplay, CDisplay);
+        jpane.setLayout(null);
+        setSize(WINDOWWIDTH, WINDOWHEIGHT);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setResizable(false);
+        ResetButton.addActionListener(this);
+        ZeroButton.addActionListener(this);
+        OneButton.addActionListener(this);
+        TwoButton.addActionListener(this);
+        ThreeButton.addActionListener(this);
+        FourButton.addActionListener(this);
+        FiveButton.addActionListener(this);
+        SixButton.addActionListener(this);
+        SevenButton.addActionListener(this);
+        EightButton.addActionListener(this);
+        NineButton.addActionListener(this);
+        AButton.addActionListener(this);
+        BButton.addActionListener(this);
+        CButton.addActionListener(this);
+        DButton.addActionListener(this);
+        EButton.addActionListener(this);
+        FButton.addActionListener(this);
+        NMIButton.addActionListener(this);
+        IRQButton.addActionListener(this);
+        load.addActionListener(this);
+        save.addActionListener(this);
+        settings.addActionListener(this);
+        exit.addActionListener(this);
+        about.addActionListener(this);
+        jpane.add(ResetButton);
+        jpane.add(ZeroButton);
+        jpane.add(OneButton);
+        jpane.add(TwoButton);
+        jpane.add(ThreeButton);
+        jpane.add(FourButton);
+        jpane.add(FiveButton);
+        jpane.add(SixButton);
+        jpane.add(SevenButton);
+        jpane.add(EightButton);
+        jpane.add(NineButton);
+        jpane.add(AButton);
+        jpane.add(BButton);
+        jpane.add(CButton);
+        jpane.add(DButton);
+        jpane.add(EButton);
+        jpane.add(FButton);
+        jpane.add(NMIButton);
+        jpane.add(IRQButton);
+        jpane.add(HLabel);
+        jpane.add(ILabel);
+        jpane.add(NLabel);
+        jpane.add(ZLabel);
+        jpane.add(VLabel);
+        jpane.add(CLabel);
+        add(jpane);
+        setJMenuBar(menubar);
         runner.start();
     }
     
+    @Override
     public void actionPerformed (ActionEvent evt) {
         Object source = evt.getSource();
         if(source == ResetButton)
@@ -431,9 +450,13 @@ public class UI extends JFrame implements ActionListener, Runnable {
             KeyAction(14);
         if(source == FButton)
             KeyAction(15);
+        if(source == NMIButton)
+            myCPU.NMIReq();
+        if(source == IRQButton)
+            myCPU.IRQReq();
         if(source == about)
         {
-            JOptionPane.showMessageDialog(this, "By Dave Sherman\n" + "email: davesherman74@yahoo.com\n" + M6800.version + " (c) 2020", "About ET3400A Simulator", JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.showMessageDialog(this, "By Dave Sherman\n" + "email: davesherman74@yahoo.com\n" + M6800.VERSION + " (c) 2020", "About ET3400A Simulator", JOptionPane.PLAIN_MESSAGE);
         }
         if(source == settings)
         {
@@ -454,7 +477,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
                 fileName = fileDialog.getDirectory() + fileDialog.getFile();
                 try {
                     infile = new FileReader(fileName);
-                } catch (Exception exc) {
+                } catch (FileNotFoundException exc) {
                     
                 }
                 if (infile != null)
@@ -463,7 +486,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
                         JOptionPane.showMessageDialog(this, "Error Loading S-Record", "Error", JOptionPane.ERROR_MESSAGE);
                     try {
                         infile.close();
-                    } catch (Exception exc) {
+                    } catch (IOException exc) {
                         
                     }
                 }
@@ -480,15 +503,14 @@ public class UI extends JFrame implements ActionListener, Runnable {
                 fileName = fileDialog.getDirectory() + fileDialog.getFile();
                 try {
                     outfile = new FileWriter(fileName);
-                } catch (Exception exc) {
-                    exc.printStackTrace();
+                } catch (IOException exc) {
                 }
                 if(outfile != null)
                 {
                     M6800.WriteSRecordFile(outfile, myMemoryModule, myCPU);
                     try {
                         outfile.close();
-                    } catch (Exception exc) {
+                    } catch (IOException exc) {
                         
                     }
                 }
@@ -582,13 +604,14 @@ public class UI extends JFrame implements ActionListener, Runnable {
         repaint();
     }
     
+    @Override
     public void run ()
     {
         
         while(true)
         {
             Refresh();
-            try {Thread.sleep(RefreshMilliseconds); }
+            try {Thread.sleep(REFRESHMILLISECONDS); }
             catch (InterruptedException exc) {
             debug = 1;
             }
@@ -598,15 +621,12 @@ public class UI extends JFrame implements ActionListener, Runnable {
     
     static JSlider getSlider (final JOptionPane optionPane, CPU aCPU)
     {
-        JSlider slider = new JSlider(CPU.MinClockDelay, CPU.MaxClockDelay, aCPU.GetClockDelay());
-        ChangeListener listener = new ChangeListener() {
-            public void stateChanged(ChangeEvent changeEvent)
+        JSlider slider = new JSlider(CPU.MINCLOCKDELAY, CPU.MAXCLOCKDELAY, aCPU.GetClockDelay());
+        ChangeListener listener = (ChangeEvent changeEvent) -> {
+            JSlider theSlider = (JSlider) changeEvent.getSource();
+            if(!theSlider.getValueIsAdjusting())
             {
-                JSlider theSlider = (JSlider) changeEvent.getSource();
-                if(!theSlider.getValueIsAdjusting())
-                {
-                    aCPU.SetClockDelay(theSlider.getValue());
-                }
+                aCPU.SetClockDelay(theSlider.getValue());
             }
         };
         slider.addChangeListener(listener);
@@ -630,7 +650,6 @@ class myPanel extends JPanel {
                     sevenSegmentDisplay V,
                     sevenSegmentDisplay C)
     {
-        setLayout(null);
         Hdisp = H;
         Idisp = I;
         Ndisp = N;
@@ -639,6 +658,7 @@ class myPanel extends JPanel {
         Cdisp = C;
     }
     
+    @Override
     public void paintComponent(Graphics g) {
         g.setColor(Color.black);
         g.fillRect(UI.HDISPLAYSTARTX, UI.DISPLAYSTARTY, UI.DISPLAYWIDTH, UI.DISPLAYHEIGHT);

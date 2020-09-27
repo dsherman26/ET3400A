@@ -21,6 +21,14 @@
 **      -Ignore checksum mismatches in s-record being loaded
 **      -Clear RAM when loading a new s-record
 ** 
+** V1.4;
+**      -Bug fix in ASR instruction, wasn't keeping Bit 7 set
+**      -Fixed extended addressing in LDX, LDS, CPX
+**
+** V1.5:
+**      -Add NMI and IRQ
+**      -Get WAI working properly
+**      -Clean up compiler warnings
 */
 
 package m6800;
@@ -36,12 +44,12 @@ public class M6800 {
     /**
      * @param args the command line arguments
      */
-    final static String version = "V1.3";
+    final static String VERSION = "V1.5";
     
     final static int BYTESPERSRECORD = 16;
     
     // the following is the example 1 program from the ET-3400A manual
-    final static int [] sample1 = {
+    final static int [] SAMPLE1 = {
         0xbd,
         0xfc,
         0xbc,
@@ -84,7 +92,7 @@ public class M6800 {
     
     public static void main(String[] args) {
         // TODO code application logic here
-        int icounter = 0;
+        int icounter;
         int icounter2;
         int junk = 0;
         
@@ -95,7 +103,9 @@ public class M6800 {
             CPUMem.MemWrite(icounter, sample1[icounter]);
         }*/
         CPU CPU6800 = new CPU(CPUMem);
+        CPU6800.Reset();
         UI gui = new UI(CPU6800, CPUMem);
+        gui.FinishUIInit();
         gui.setVisible(true);
         
         while(true)
@@ -113,7 +123,7 @@ public class M6800 {
     
     public static void WriteSRecordFile (FileWriter out, MemoryModule mem, CPU aCPU)
     {
-        int iAddress = 0;
+        int iAddress;
         int index;
         SRecord srec = new SRecord();
         srec.Type = 0;
@@ -130,7 +140,7 @@ public class M6800 {
         srec.calcChecksum();
         try {
             out.write(srec.SRecordToString());
-        } catch (Exception exc) {
+        } catch (IOException exc) {
             
         }
         aCPU.Halt(true);
@@ -147,7 +157,7 @@ public class M6800 {
             srec.calcChecksum();
             try {
                 out.write(srec.SRecordToString());
-            }  catch (Exception exc)  {
+            }  catch (IOException exc)  {
                 
             }
         }
@@ -159,7 +169,7 @@ public class M6800 {
         srec.calcChecksum();
         try {
             out.write(srec.SRecordToString());
-        } catch (Exception exc) {
+        } catch (IOException exc) {
             
         }
 
@@ -211,7 +221,6 @@ public class M6800 {
                 }
                 else if(srec.Type == 9) //reached the end
                 {
-                    index = mem.MemRead(0);
                     break;
                 }
             }
@@ -227,12 +236,12 @@ public class M6800 {
     public static String ReadString (FileReader in)
     {
         String instring = "";
-        int inchar = 0;
+        int inchar;
         do 
         {
             try {
                 inchar = in.read();
-            } catch (Exception exc) {
+            } catch (IOException exc) {
                 return (instring);
             }
             if(inchar != -1) //EOF reached

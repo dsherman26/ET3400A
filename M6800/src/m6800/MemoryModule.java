@@ -50,7 +50,7 @@ public class MemoryModule {
     };
     
     final static int MEMSIZE = 65536;
-    private int memArray[];
+    private final int memArray[];
     final static int RAMSTART = 0;
     final static int ROMSTART = 0xFC00;
     final static int DISPLAYSTART = 0xC110;
@@ -62,7 +62,7 @@ public class MemoryModule {
     final static int KEYPADDEBOUNCE = 32;
     static int debug;
     
-    private int KeypadCounter[];
+    private final int KeypadCounter[];
     
     
     MemRegion RAM;

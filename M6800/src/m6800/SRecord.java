@@ -20,7 +20,7 @@ public class SRecord {
     final static int ERR_INVALID_SIZE = -1;
     final static int ERR_INVALID_CHECKSUM = -2;
     final static int ERR_NO_S = -3;
-    final static String HexVals [] = {"0", "1", "2", "3", "4", "5", "6", "7", "8",
+    final static String HEXVALS [] = {"0", "1", "2", "3", "4", "5", "6", "7", "8",
                                 "9", "A", "B", "C", "D", "E", "F"};
     enum ParseStates {
         IDLE,
@@ -217,16 +217,16 @@ public class SRecord {
     
     private String IntToHex (int iValue)
     {
-        return (HexVals[iValue]);
+        return (HEXVALS[iValue]);
     }
     
     private String IntToHex2 (int iValue)
     {
         String tempString = "";
         int iTemp = iValue >> 4;
-        tempString = tempString + HexVals[iTemp];
+        tempString = tempString + HEXVALS[iTemp];
         iTemp = iValue & 0xF;
-        tempString = tempString + HexVals[iTemp];
+        tempString = tempString + HEXVALS[iTemp];
         return tempString;
     }
     

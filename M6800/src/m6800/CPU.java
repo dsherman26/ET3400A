@@ -9,6 +9,8 @@
 ** 3/18/2020 Fix BGE instruction
 ** 3/18/2010 Set command state appropriately in reset()
 ** 3/28/2020 Add halt
+** 4/10/2020 Fix GetArgument16 for Extended addressing
+** 9/13/2020 Add NMI, IRQ, and WAI functionality
  */
 package m6800;
 /**
@@ -35,10 +37,16 @@ public class CPU {
         public final int NUMCOMMANDS = 198; // per 6800 reference, there are 197
                                      // possible opcodes, add 1 for invalid opcode
         public final int MEMEND = 0xFFFF;
-        public static final int MinClockDelay = 10;
-        public static final int MaxClockDelay = 1000;
-        public static final int DefaultClockDelay = 100;
+        
+        public static final int MINCLOCKDELAY = 10;
+        public static final int MAXCLOCKDELAY = 1000;
+        public static final int DEFAULTCLOCKDELAY = 100;
         private int lastLocation; // for instructions that modify a value
+        
+        private final int RESETVECTOR = 0xFFFE;
+        private final int NMIVECTOR = 0xFFFC;
+        private final int SWIVECTOR = 0xFFFA;
+        private final int IRQVECTOR = 0xFFF8;
         
         private int debugstop = 0x0024;
         private boolean debug;
@@ -56,11 +64,11 @@ public class CPU {
         };
         
         private CommandStates state;
-        private MemoryModule mem;
+        private final MemoryModule mem;
         private int clockstep;
         private Instruction CurrentInstruction;
 
-        private int ClockDelay = DefaultClockDelay;
+        private int ClockDelay = DEFAULTCLOCKDELAY;
 /*
 **      Reset - init CPU to reset state
 */
@@ -70,13 +78,19 @@ public class CPU {
             ACCB = 0;
             IX = 0;
             SP = 0;
-            PC = ((mem.MemRead(MEMEND-1) << 8) + mem.MemRead(MEMEND));
+            PC = ((mem.MemRead(RESETVECTOR) << 8) + mem.MemRead(RESETVECTOR+1));
             clockstep = 0;
             state = CommandStates.COMMAND;
             WAIFlag = false;
             IRQFlag = false;
             NMIFlag = false;
             ResetReq = false;
+            H=false;
+            I=true;
+            N=false;
+            Z=false;
+            V=false;
+            C=false;
         }
         
         public void Halt (boolean bHalt)
@@ -96,6 +110,10 @@ public class CPU {
         {
             if(ResetReq)
                 Reset();
+            else if(NMIFlag)
+                NMI();
+            else if(IRQFlag)
+                IRQ();
             else if(!WAIFlag && !Halted)
             {
                 switch(state)
@@ -133,24 +151,53 @@ public class CPU {
                     push8(ACCA);
                     push8(ACCB);
                     push8(GetConditionCode());
+                    PC = (mem.MemRead(IRQVECTOR) << 8) + mem.MemRead(IRQVECTOR+1);
+                    I = true;
                 }
-                I = true;
-                IRQFlag = true;
+                else
+                {
+                    WAIFlag = false;
+                    I = true;
+                    PC = (mem.MemRead(IRQVECTOR) << 8) + mem.MemRead(IRQVECTOR+1);
+                }
+                state = CommandStates.COMMAND;
+                IRQFlag = false;
             }
         }
 
+        public void IRQReq ()
+        {
+            if(!I)
+            {
+                IRQFlag = true;
+            }
+        }
 /*
 **      NMI - Simulate NMI signal
 */        
         public void NMI ()
         {
+            if(!WAIFlag)
+            {
+                push16(PC);
+                push16(IX);
+                push8(ACCA);
+                push8(ACCB);
+                push8(GetConditionCode());
+                PC = (mem.MemRead(NMIVECTOR) << 8) + (mem.MemRead(NMIVECTOR+1));
+            }
+            else
+            {
+                WAIFlag = false;
+                PC = (mem.MemRead(NMIVECTOR) << 8) + (mem.MemRead(NMIVECTOR+1));
+            }
+            state = CommandStates.COMMAND;
+            NMIFlag = false;
+        }
+        
+        public void NMIReq()
+        {
             NMIFlag = true;
-            push16(PC);
-            push16(IX);
-            push8(ACCA);
-            push8(ACCB);
-            push8(GetConditionCode());
-            I = true;
         }
         
         private Instruction CPUInstructions[];
@@ -386,7 +433,6 @@ public class CPU {
             this.mem = mem;
             state = CommandStates.COMMAND;
             InitInstructions();
-            Reset();
         }
 
 /*
@@ -854,11 +900,15 @@ public class CPU {
         private void ASR(Instruction.AddressMode mode)
         {
             int value = GetArgument(mode);
+            boolean B7 = BitTest(value,7);
             C = BitTest(value,0);
             value >>= 1;
+            if(B7)
+                value |= (1<<7);
             N = BitTest(value,7);
             Z = (value == 0);
             V = (N ^ C);
+            
             StoreValue(-1, value);
         }
         
@@ -1287,7 +1337,7 @@ public class CPU {
             push8(ACCB);
             push8(GetConditionCode());
             I = true;
-            PC = ((mem.MemRead(MEMEND-5) << 8) + mem.MemRead(MEMEND-4));
+            PC = ((mem.MemRead(SWIVECTOR) << 8) + mem.MemRead(SWIVECTOR+1));
         }
         
         private void TST (Instruction.AddressMode mode)
@@ -1461,7 +1511,16 @@ public class CPU {
             lastLocation = address;
             PC+=2;
             return (result);
-        }        
+        }
+
+        private int ExtendedValue16ByAddress()
+        {
+            int address, result;
+            address = (mem.MemRead(PC) << 8) + (mem.MemRead(PC+1));
+            result = ((mem.MemRead(address) << 8) + mem.MemRead(address+1));
+            PC += 2;
+            return (result);
+        }
 
 /*
 **      IndexedValue - Get 8-bit value for instructions using indexed addressing
@@ -1545,7 +1604,8 @@ public class CPU {
                     value = DirectValue16();
                 break;
                 case EXTENDED:
-                    value = ExtendedValue();
+                    //value = ExtendedValue();
+                    value = ExtendedValue16ByAddress();
                 break;
                 case INDEXED:
                     value = IndexedValue16();
@@ -1696,18 +1756,18 @@ public class CPU {
         
         public void SetClockDelay(int iValue)
         {
-            if(iValue < MinClockDelay)
-                iValue = MinClockDelay;
-            if(iValue > MaxClockDelay)
-                iValue = MaxClockDelay;
-            ClockDelay = MaxClockDelay - iValue;
+            if(iValue < MINCLOCKDELAY)
+                iValue = MINCLOCKDELAY;
+            if(iValue > MAXCLOCKDELAY)
+                iValue = MAXCLOCKDELAY;
+            ClockDelay = MAXCLOCKDELAY - iValue;
             if(ClockDelay <= 0)
-                ClockDelay = MinClockDelay;
+                ClockDelay = MINCLOCKDELAY;
         }
         
         public int GetClockDelay()
         {
-            return (MaxClockDelay - ClockDelay);
+            return (MAXCLOCKDELAY - ClockDelay);
         }
         
         public int GetRealClockDelay()
