@@ -29,6 +29,13 @@
 **      -Add NMI and IRQ
 **      -Get WAI working properly
 **      -Clean up compiler warnings
+** V1.6
+**      -Add ability to load S-Record into ROM
+**      -Improve default clock speed, better speed adjustement
+**      -To match ET-3400 more closely, writing to display addresses with the
+**       "don't care" bits, they behave as "don't care" bits
+**      -Change default filename filter to show all files when loading
+**       S-records
 */
 
 package m6800;
@@ -44,7 +51,7 @@ public class M6800 {
     /**
      * @param args the command line arguments
      */
-    final static String VERSION = "V1.5";
+    final static String VERSION = "V1.6";
     
     final static int BYTESPERSRECORD = 16;
     
@@ -217,6 +224,62 @@ public class M6800 {
                     for(index=0;index < srec.dataBytes;index++)
                     {
                         mem.MemWrite(iAddress++, srec.data[index]);
+                    }
+                }
+                else if(srec.Type == 9) //reached the end
+                {
+                    break;
+                }
+            }
+            else
+                return (result);
+        }
+        
+        aCPU.ResetRequest();
+        aCPU.Halt(false);
+        return (result);
+    }
+    
+    public static int ReadSRecordFileROM (FileReader in, MemoryModule mem, CPU aCPU)
+    {
+        String instring;
+        SRecord srec = new SRecord();
+        int result;
+        int iAddress;
+        int index;
+        instring = ReadString(in);
+        result = srec.ParseFromString(instring); //try starting srecord
+        if(result != SRecord.NO_ERROR)
+        {
+            return (result);
+        }
+        aCPU.Halt(true);
+        //for(index=0;index < mem.RAMSIZE;index++)
+        //    mem.MemWrite(index, 0);
+        
+        iAddress = MemoryModule.ROMSTART;
+        if(srec.Type == 1)
+        {
+            for(index=0;index < srec.dataBytes;index++)
+            {
+                mem.ROMWrite(iAddress++, srec.data[index]);
+            }
+        }
+  
+        while(iAddress < (MemoryModule.ROMSTART + mem.ROMSIZE))
+        {
+            instring = ReadString(in);
+            if(instring.compareTo("") == 0) // may have reached the end
+                break;
+            result = srec.ParseFromString(instring); //try starting srecord
+            if (result == SRecord.NO_ERROR)
+            {
+                if(srec.Type == 1)
+                {
+                    //iAddress = srec.address;
+                    for(index=0;index < srec.dataBytes;index++)
+                    {
+                        mem.ROMWrite(iAddress++, srec.data[index]);
                     }
                 }
                 else if(srec.Type == 9) //reached the end
