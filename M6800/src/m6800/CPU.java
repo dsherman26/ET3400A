@@ -11,6 +11,7 @@
 ** 3/28/2020 Add halt
 ** 4/10/2020 Fix GetArgument16 for Extended addressing
 ** 9/13/2020 Add NMI, IRQ, and WAI functionality
+** 5/11/2022 Modified clock delay to use better range that's more realistic
  */
 package m6800;
 /**
@@ -38,9 +39,10 @@ public class CPU {
                                      // possible opcodes, add 1 for invalid opcode
         public final int MEMEND = 0xFFFF;
         
-        public static final int MINCLOCKDELAY = 10;
-        public static final int MAXCLOCKDELAY = 1000;
-        public static final int DEFAULTCLOCKDELAY = 100;
+        public static final int MINCLOCKDELAY = 0;
+        public static final int MAXCLOCKDELAY = 10;
+        public static final int DEFAULTCLOCKDELAY = 5;
+        public static final int DEFAULTCLOCKTICKS = 1000;
         private int lastLocation; // for instructions that modify a value
         
         private final int RESETVECTOR = 0xFFFE;
@@ -68,7 +70,8 @@ public class CPU {
         private int clockstep;
         private Instruction CurrentInstruction;
 
-        private int ClockDelay = DEFAULTCLOCKDELAY;
+        private int ClockDelay = DEFAULTCLOCKDELAY; // setting from slider
+        private int ActualClockDelay = DEFAULTCLOCKTICKS;
 /*
 **      Reset - init CPU to reset state
 */
@@ -1760,9 +1763,7 @@ public class CPU {
                 iValue = MINCLOCKDELAY;
             if(iValue > MAXCLOCKDELAY)
                 iValue = MAXCLOCKDELAY;
-            ClockDelay = MAXCLOCKDELAY - iValue;
-            if(ClockDelay <= 0)
-                ClockDelay = MINCLOCKDELAY;
+            ActualClockDelay = ClockSpeedToTicks (iValue);
         }
         
         public int GetClockDelay()
@@ -1772,6 +1773,16 @@ public class CPU {
         
         public int GetRealClockDelay()
         {
-            return (ClockDelay);
+            return (ActualClockDelay);
         }
+        
+        private int ClockSpeedToTicks (int val)
+        {
+            double a = -150;
+            double b = 1750;
+            int workval;
+            workval = (int) (a * val) + (int) b;
+            return (workval);
+        }
+        
 }
