@@ -57,12 +57,15 @@ public class MemoryModule {
     final static int KEYPADSTART = 0xC003;
     final int RAMSIZE = 512;
     final int ROMSIZE = 1024;
-    final int DISPLAYSIZE = 0x60;
+    //final int DISPLAYSIZE = 0x60;
+    final int DISPLAYSIZE = 0xF0;
     final int KEYPADSIZE = 8;
     final static int KEYPADDEBOUNCE = 32;
     static int debug;
+    final static int DISPLAY_DONTCARE_MASK = 0xFF77;
     
     private final int KeypadCounter[];
+    private boolean ROMLoaded;
     
     
     MemRegion RAM;
@@ -78,12 +81,26 @@ public class MemoryModule {
         if((iAddress >= RAM.memstart && iAddress < (RAM.memstart + RAM.memsize)) ||
                 (iAddress >= DISPLAY.memstart && iAddress < (DISPLAY.memstart + DISPLAY.memsize)))
         {
+            ////
+            if (iAddress >= DISPLAY.memstart)
+            {
+                iAddress &= DISPLAY_DONTCARE_MASK;
+            }
             memArray[iAddress] = (iValue & 0xFF);
         }
         if ((iAddress == 0) && (iValue == 7))
             debug = 1;
         else
             debug = 0;
+    }
+    
+    public void ROMWrite (int iAddress, int iValue)
+    {
+        if ((iAddress >= ROM.memstart) && (iAddress < (ROM.memstart + ROM.memsize)))
+        {
+            memArray[iAddress] = iValue & 0xFF;
+        }
+        ROMLoaded = true;
     }
 
 /*
@@ -104,7 +121,10 @@ public class MemoryModule {
         }
         else if (iAddress >= ROM.memstart && iAddress < (ROM.memstart + ROM.memsize))
         {
-            return (ET3400AROM[iAddress - ROM.memstart]);
+            if (ROMLoaded)
+                return (memArray[iAddress]);
+            else
+                return (ET3400AROM[iAddress - ROM.memstart]);
         }
         else
             return (0);
@@ -128,6 +148,7 @@ public class MemoryModule {
         ROM = new MemRegion(ROMSTART, ROMSIZE);
         DISPLAY = new MemRegion(DISPLAYSTART, DISPLAYSIZE);
         KEYPAD = new MemRegion(KEYPADSTART, KEYPADSIZE);
+        ROMLoaded = false;
     }
     
     public int KeypadRead(int address)
