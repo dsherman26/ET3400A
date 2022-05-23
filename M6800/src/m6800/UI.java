@@ -147,6 +147,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
     final static int ZLABELX = ZDISPLAYSTARTX + DISPLAYWIDTH / 2;
     final static int VLABELX = VDISPLAYSTARTX + DISPLAYWIDTH / 2;
     final static int CLABELX = CDISPLAYSTARTX + DISPLAYWIDTH / 2;
+
     
     final static int HDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x58;
     final static int IDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x48;
@@ -154,6 +155,21 @@ public class UI extends JFrame implements ActionListener, Runnable {
     final static int ZDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x28;
     final static int VDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x18;
     final static int CDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x8;
+    
+    /*
+    final static int HDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x50;
+    final static int IDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x40;
+    final static int NDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x30;
+    final static int ZDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x20;
+    final static int VDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x10;
+    final static int CDISPLAYSTART = MemoryModule.DISPLAYSTART + 0x0;
+    */
+    
+    
+    final static int DISPLAY_ALT1 = 0x8;
+    final static int DISPLAY_ALT2 = 0x80;
+    final static int DISPLAY_ALT3 = 0x88;
+       
     
     final int iFButtonStartX = 150;
     final int iFButtonStartY = 150;
@@ -166,6 +182,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
     private final JMenu menuFile;
     private final JMenu menuHelp;
     private final JMenuItem load;
+    private final JMenuItem loadROM;
     private final JMenuItem save;
     private final JMenuItem settings;
     private final JMenuItem about;
@@ -334,10 +351,12 @@ public class UI extends JFrame implements ActionListener, Runnable {
         CLabel.setBounds(CLABELX, LABELSTARTY, LABELHEIGHT, LABELWIDTH);
         menuFile = new JMenu("File");
         load = new JMenuItem("Load");
+        loadROM = new JMenuItem("Load ROM");
         save = new JMenuItem("Save");
         settings = new JMenuItem("Settings");
         exit = new JMenuItem("Exit");
         menuFile.add(load);
+        menuFile.add(loadROM);
         menuFile.add(save);
         menuFile.add(settings);
         menuFile.add(exit);
@@ -379,6 +398,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
         NMIButton.addActionListener(this);
         IRQButton.addActionListener(this);
         load.addActionListener(this);
+        loadROM.addActionListener(this);
         save.addActionListener(this);
         settings.addActionListener(this);
         exit.addActionListener(this);
@@ -456,7 +476,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
             myCPU.IRQReq();
         if(source == about)
         {
-            JOptionPane.showMessageDialog(this, "By Dave Sherman\n" + "email: davesherman74@yahoo.com\n" + M6800.VERSION + " (c) 2020", "About ET3400A Simulator", JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.showMessageDialog(this, "By Dave Sherman\n" + "email: davesherman74@yahoo.com\n" + M6800.VERSION + " (c) 2022", "About ET3400A Simulator", JOptionPane.PLAIN_MESSAGE);
         }
         if(source == settings)
         {
@@ -470,7 +490,7 @@ public class UI extends JFrame implements ActionListener, Runnable {
         if(source == load)
         {
             fileDialog = new FileDialog(this, "Open S-Record", FileDialog.LOAD);
-            fileDialog.setFile("*.s19");
+            fileDialog.setFile("*.*");  // changgd 5/9/2022, was *.s19
             fileDialog.setVisible(true);
             if(fileDialog.getFile().compareTo("null") != 0)
             {
@@ -483,6 +503,32 @@ public class UI extends JFrame implements ActionListener, Runnable {
                 if (infile != null)
                 {
                     if(M6800.ReadSRecordFile(infile, myMemoryModule, myCPU) != SRecord.NO_ERROR)
+                        JOptionPane.showMessageDialog(this, "Error Loading S-Record", "Error", JOptionPane.ERROR_MESSAGE);
+                    try {
+                        infile.close();
+                    } catch (IOException exc) {
+                        
+                    }
+                }
+                
+            }
+        }
+        if(source == loadROM)
+        {
+            fileDialog = new FileDialog(this, "Open S-Record", FileDialog.LOAD);
+            fileDialog.setFile("*.*");  // changgd 5/9/2022, was *.s19
+            fileDialog.setVisible(true);
+            if(fileDialog.getFile().compareTo("null") != 0)
+            {
+                fileName = fileDialog.getDirectory() + fileDialog.getFile();
+                try {
+                    infile = new FileReader(fileName);
+                } catch (FileNotFoundException exc) {
+                    
+                }
+                if (infile != null)
+                {
+                    if(M6800.ReadSRecordFileROM(infile, myMemoryModule, myCPU) != SRecord.NO_ERROR)
                         JOptionPane.showMessageDialog(this, "Error Loading S-Record", "Error", JOptionPane.ERROR_MESSAGE);
                     try {
                         infile.close();
@@ -558,6 +604,8 @@ public class UI extends JFrame implements ActionListener, Runnable {
         int iAddress = MemAddress - 1;
         int iSegmentValue = 0;
         int iCounter;
+        // 5/9/2022 - per ET-3400A documentation, bits 3 and 7 in the display address are "don't care".
+        // check for values at these locations too
         for(iCounter = 0;iCounter < sevenSegmentDisplay.MAXSEGMENTS;iCounter++)
         {
             switch(iCounter)
